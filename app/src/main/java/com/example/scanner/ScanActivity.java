@@ -7,10 +7,11 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.*;
 import android.support.annotation.*;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.*;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.*;
 import android.util.Log;
 import android.view.*;
 import android.widget.*;
@@ -29,7 +30,7 @@ import java.util.ArrayList;
  Created by alatta on 3/2/17.
  */
 
-public class ScanActivity extends AppCompatActivity {
+public class ScanActivity extends AppCompatActivity implements ViewPager.OnPageChangeListener {
 
     private static final String TAG = "Scan-Fragment";
     public static final int REQUEST_CODE = 9001;
@@ -39,6 +40,8 @@ public class ScanActivity extends AppCompatActivity {
     private ArrayList<Integer> mResources = new ArrayList<>();
     private CameraSource mCameraSource;
     private CameraSourcePreview mCameraSourcePreview;
+    private Handler mHandler;
+
 
     @BindView(R.id.content) FrameLayout mContent;
     @BindView(R.id.preview) CameraSourcePreview mPreview;
@@ -59,17 +62,18 @@ public class ScanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_scan);
         ButterKnife.bind(this);
 
+        mHandler = new Handler(getMainLooper());
         for(int i = 0; i < imgResources.length;i++) {
             mResources.add(imgResources[i]);
         }
         mPager.setAdapter(new BarcodeImagePagerAdapter(ScanActivity.this, mResources));
-        mPager.setCurrentItem(1);
+        mPager.addOnPageChangeListener(this);
+        mPager.setCurrentItem(1,true);
+
        // pagerIndicator.setViewPager(pager);
 
         int reqPerm = ActivityCompat.checkSelfPermission(this,Manifest.permission.CAMERA);
-        if (reqPerm == PackageManager.PERMISSION_GRANTED) {
-            buildCameraSource(format);
-        } else {
+        if (reqPerm != PackageManager.PERMISSION_GRANTED) {
             requestCameraPermission();
         }
     }
@@ -110,13 +114,12 @@ public class ScanActivity extends AppCompatActivity {
 
         if (grantResults.length != 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Camera permission granted - initialize the camera source");
-            // we have permission, so create the camerasource
+            // we have permission, so build the camerasource
             buildCameraSource(format);
             return;
         }
 
-        Log.e(TAG, "Permission not granted: results len = " + grantResults.length +
-                " Result code = " + (grantResults.length > 0 ? grantResults[0] : "(empty)"));
+        Log.e(TAG, "Permission not granted:" + " Result code = " + (grantResults.length > 0 ? grantResults[0] : "(empty)"));
 
         DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
@@ -129,44 +132,78 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     private void buildCameraSource(int format) {
+        if(mCameraSource != null) {
+            mCameraSource.stop();
+        }
 
         Context context = getApplicationContext();
 
-        BarcodeDetector detector = new BarcodeDetector.Builder(context).build();
+        BarcodeDetector mBarCodeDetector = new BarcodeDetector.Builder(context).setBarcodeFormats(format).build();
 
         ScannerTrackerFactory scannerTrackerFactory = new ScannerTrackerFactory(mGraphicOverlay);
-        detector.setProcessor(new MultiProcessor.Builder<>(scannerTrackerFactory).build());
+        mBarCodeDetector.setProcessor(new MultiProcessor.Builder<>(scannerTrackerFactory).build());
 
-        CameraSource.Builder builder = new CameraSource.Builder(context, detector)
+        CameraSource.Builder builder = new CameraSource.Builder(context, mBarCodeDetector)
                 .setFacing(CameraSource.CAMERA_FACING_BACK)
                 .setRequestedPreviewSize(1600, 1024)
                 .setRequestedFps(15.0f)
                 .setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
 
         mCameraSource = builder.build();
+        startCamera();
+
     }
 
     private void startCamera() {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                try {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int playServicesAvailability = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(
+                                    getApplicationContext());
 
-        int playServicesAvailability = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this
-                .getApplicationContext());
-
-        if (playServicesAvailability != ConnectionResult.SUCCESS) {
-            Dialog dialog = GoogleApiAvailability.getInstance().getErrorDialog(this,
-                                                                               playServicesAvailability,
-                                                                               REQUEST_CODE);
-            dialog.show();
-        }
-
-        if (mCameraSource != null) {
-            try {
-                mPreview.start(mCameraSource, mGraphicOverlay);
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to start camera", e);
-                mCameraSource.release();
-                mCameraSource = null;
+                            if (playServicesAvailability != ConnectionResult.SUCCESS) {
+                                Dialog dialog = GoogleApiAvailability.getInstance().getErrorDialog(getParent(),
+                                                                                                   playServicesAvailability,
+                                                                                                   REQUEST_CODE);
+                                dialog.show();
+                            }
+                            if (mCameraSource != null) {
+                                try {
+                                    mPreview.start(mCameraSource, mGraphicOverlay);
+                                } catch (IOException | SecurityException e) {
+                                    Log.e(TAG, "Failed to start camera", e);
+                                    mCameraSource.release();
+                                    mCameraSource = null;
+                                }
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to start camera", e);
+                }
             }
-        }
+        }.start();
+
+//        Runnable runnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                if (mCameraSource != null) {
+//                    try {
+//                        mPreview.start(mCameraSource, mGraphicOverlay);
+//                    } catch (IOException e) {
+//                        Log.e(TAG, "Failed to start camera", e);
+//                        mCameraSource.release();
+//                        mCameraSource = null;
+//                    }
+//                }
+//            }
+//        };
+//        mHandler.post(runnable);
     }
 
     @Override
@@ -189,6 +226,42 @@ public class ScanActivity extends AppCompatActivity {
         if (mPreview != null) {
             mPreview.release();
         }
+    }
+
+    private void showSnackBar(String format) {
+        Snackbar snackbar = Snackbar.make(mGraphicOverlay, format,
+                                          Snackbar.LENGTH_LONG);
+        View snackBarView = snackbar.getView();
+        snackBarView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark));
+        snackbar.show();
+    }
+
+    @Override
+    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+        switch (position) {
+            case 0:
+                buildCameraSource(Barcode.DATA_MATRIX);
+                showSnackBar("Data Matrix");
+                break;
+            case 1:
+                buildCameraSource(Barcode.QR_CODE);
+                showSnackBar("QR Code");
+                break;
+            case 2:
+                buildCameraSource(Barcode.PDF417);
+                showSnackBar("PDF-417");
+                break;
+        }
+    }
+
+    @Override
+    public void onPageSelected(int position) {
+
+    }
+
+    @Override
+    public void onPageScrollStateChanged(int state) {
+
     }
 }
 

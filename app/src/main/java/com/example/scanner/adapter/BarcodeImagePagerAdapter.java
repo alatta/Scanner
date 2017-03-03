@@ -3,10 +3,8 @@ package com.example.scanner.adapter;
 import android.content.Context;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
-import android.support.v7.widget.RecyclerView;
 import android.view.*;
 import android.widget.ImageView;
-import butterknife.*;
 import com.example.scanner.R;
 
 import java.util.ArrayList;
@@ -69,6 +67,7 @@ public class BarcodeImagePagerAdapter extends PagerAdapter {
     public Parcelable saveState() {
         return null;
     }
+
 }
 
 
