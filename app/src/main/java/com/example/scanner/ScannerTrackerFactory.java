@@ -9,7 +9,7 @@ import com.google.android.gms.vision.barcode.Barcode;
  */
 
 /**
- For every new barcode this factoy will create a new tracker and associate the graphic
+ For every new barcode this factory will create a new tracker and associate the graphic
  */
 public class ScannerTrackerFactory implements MultiProcessor.Factory<Barcode> {
     private GraphicOverlay<ScannerGraphic> mGraphicOverlay;

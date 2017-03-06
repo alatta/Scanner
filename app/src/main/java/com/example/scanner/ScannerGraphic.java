@@ -12,7 +12,7 @@ public class ScannerGraphic extends GraphicOverlay.Graphic {
 
     private int mId;
 
-    private static final int COLOR_CHOICES[] = {Color.RED, Color.BLUE, Color.GREEN};
+    private static final int COLOR_CHOICES[] = {Color.CYAN, Color.BLUE, Color.GREEN};
 
     private static int mCurrColorIndex = 0;
     private Paint mRectPaint;
