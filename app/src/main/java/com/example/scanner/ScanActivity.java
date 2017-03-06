@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.*;
 import android.support.annotation.*;
-import android.support.design.widget.*;
 import android.support.v4.app.*;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -245,19 +244,6 @@ public class ScanActivity extends AppCompatActivity {
         }
     }
 
-    private void showSnackBar() {
-            ScannerGraphic sg = mGraphicOverlay.getGraphics().get(0);
-            Barcode barcode = sg.getmBarcode();
-//            Bitmap bitmap = mCameraSourcePreview.getDrawingCache();
-//            Frame frame = new Frame.Builder().setBitmap(bitmap).build();
-//            SparseArray<Barcode> barcodes = mBarcodeDetector.detect(frame);
-//            if (barcodes.size() > 0) {
-//                for (int i = 0; i < barcodes.size(); i++) {
-                    Snackbar.make(mGraphicOverlay, barcode.rawValue, BaseTransientBottomBar.LENGTH_SHORT).show();
-             //   }
-          //  }
-    }
-
     class MyPageChangeListener implements ViewPager.OnPageChangeListener {
 
         @Override
@@ -268,7 +254,6 @@ public class ScanActivity extends AppCompatActivity {
                     break;
                 case 1:
                     buildCameraSource(Barcode.QR_CODE);
-                    showSnackBar();
                     break;
                 case 2:
                     buildCameraSource(Barcode.PDF417);
