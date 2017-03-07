@@ -31,7 +31,7 @@ import java.util.ArrayList;
 
 public class ScanActivity extends AppCompatActivity {
 
-    private static final String TAG = "Scan-Fragment";
+    private static final String TAG = ScanActivity.class.getSimpleName();
     private static final int CAMERA_PERM = 2;
     private static final Integer[] imgResources= {R.drawable.datamatrix, R.drawable.qr_code, R.drawable.pdf417};
     private ArrayList<Integer> mResources = new ArrayList<>();
@@ -39,6 +39,7 @@ public class ScanActivity extends AppCompatActivity {
     private CameraSourcePreview mCameraSourcePreview;
     private boolean mCameraPermissionGranted = false;
     private Spring mSpring;
+    private int mBarcodeFormat;
     private BarcodeDetector mBarcodeDetector;
 
     @BindView(R.id.content) FrameLayout mContent;
@@ -68,7 +69,7 @@ public class ScanActivity extends AppCompatActivity {
             requestCameraPermission();
         } else {
             mCameraPermissionGranted = true;
-            buildCameraSource(Barcode.QR_CODE);
+            buildCameraSource();
         }
         mPager.setAdapter(new BarcodeImagePagerAdapter(ScanActivity.this, mResources));
         mPager.addOnPageChangeListener(new MyPageChangeListener());
@@ -139,7 +140,7 @@ public class ScanActivity extends AppCompatActivity {
             Log.d(TAG, "Camera permission granted - initialize the camera source");
             // we have permission, so build the camerasource
             mCameraPermissionGranted = true;
-            buildCameraSource(Barcode.QR_CODE);
+            buildCameraSource();
             return;
         }
 
@@ -158,9 +159,8 @@ public class ScanActivity extends AppCompatActivity {
     /**
      Builds Camera Source by initializing a new BarcodeDetector instance with specified barcode format, This detector
      receives frames from the CameraSource and will ignore all barcode formats except the specified one.
-     @param format
      */
-    private void buildCameraSource(int format) {
+    private void buildCameraSource() {
 
         if (mPreview != null) {
             mPreview.stop();
@@ -170,9 +170,9 @@ public class ScanActivity extends AppCompatActivity {
 
             Context context = getApplicationContext();
 
-            mBarcodeDetector = new BarcodeDetector.Builder(context).setBarcodeFormats(format).build();
+            mBarcodeDetector = new BarcodeDetector.Builder(context).build();
 
-            ScannerTrackerFactory scannerTrackerFactory = new ScannerTrackerFactory(mGraphicOverlay);
+            ScannerTrackerFactory scannerTrackerFactory = new ScannerTrackerFactory(mGraphicOverlay, this);
             mBarcodeDetector.setProcessor(new MultiProcessor.Builder<>(scannerTrackerFactory).build());
 
             CameraSource.Builder builder = new CameraSource.Builder(context, mBarcodeDetector)
@@ -216,6 +216,10 @@ public class ScanActivity extends AppCompatActivity {
         }.start();
     }
 
+    public int getmBarcodeFormat() {
+        return mBarcodeFormat;
+    }
+
     /**
 
      */
@@ -248,19 +252,25 @@ public class ScanActivity extends AppCompatActivity {
 
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-            switch (position) {
-                case 0:
-                    buildCameraSource(Barcode.DATA_MATRIX);
-                    break;
-                case 1:
-                    buildCameraSource(Barcode.QR_CODE);
-                    break;
-                case 2:
-                    buildCameraSource(Barcode.PDF417);
-                    break;
-                default:
-                    break;
-            }
+              switch (position) {
+                       case 0:
+                            mBarcodeFormat = Barcode.DATA_MATRIX;
+                          // mScannerGraphic.setmFormat(Barcode.DATA_MATRIX);
+                           //  buildCameraSource(Barcode.DATA_MATRIX);
+                           break;
+                       case 1:
+                           mBarcodeFormat = Barcode.QR_CODE;
+                          // mScannerGraphic.F
+                           //  buildCameraSource(Barcode.QR_CODE);
+                           break;
+                       case 2:
+                           mBarcodeFormat = Barcode.PDF417;
+                         //  mScannerGraphic.setmFormat(Barcode.PDF417);
+                           //buildCameraSource(Barcode.PDF417);
+                           break;
+                       default:
+                           break;
+                   }
         }
 
         @Override

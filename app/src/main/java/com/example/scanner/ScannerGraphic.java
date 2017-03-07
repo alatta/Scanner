@@ -2,6 +2,7 @@ package com.example.scanner;
 
 import android.graphics.*;
 import android.support.design.widget.*;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import com.example.scanner.camera.GraphicOverlay;
@@ -13,6 +14,8 @@ import com.google.android.gms.vision.barcode.Barcode;
 
 public class ScannerGraphic extends GraphicOverlay.Graphic {
 
+
+    private static final String TAG = ScannerGraphic.class.getSimpleName();
     private int mId;
 
     private static final int COLOR_CHOICES[] = {Color.CYAN, Color.BLUE, Color.GREEN};
@@ -22,10 +25,14 @@ public class ScannerGraphic extends GraphicOverlay.Graphic {
     private Paint mTextPaint;
     private volatile Barcode mBarcode;
     private GraphicOverlay mOverlay;
+    private int mFormat;
+    private ScanActivity mScanActivity;
 
-    ScannerGraphic(GraphicOverlay overlay) {
+    ScannerGraphic(GraphicOverlay overlay, ScanActivity scanActivity) {
         super(overlay);
         this.mOverlay = overlay;
+        this.mScanActivity = scanActivity;
+        mFormat = mScanActivity.getmBarcodeFormat();
 
         mCurrColorIndex = (mCurrColorIndex + 1) % COLOR_CHOICES.length;
         final int selectedColor = COLOR_CHOICES[mCurrColorIndex];
@@ -54,6 +61,9 @@ public class ScannerGraphic extends GraphicOverlay.Graphic {
 
     void updateItem(Barcode barcode) {
         mBarcode = barcode;
+        mFormat = mScanActivity.getmBarcodeFormat();
+        Log.e(TAG, "Activity FORMAT IS" + mFormat);
+        Log.e(TAG, "Graphic FORMAT IS" + barcode.format);
         postInvalidate();
     }
 
@@ -63,16 +73,21 @@ public class ScannerGraphic extends GraphicOverlay.Graphic {
         if (barcode == null) {
             return;
         }
+        if (mFormat != barcode.format) {
+            showErrorSnackBar();
+        } else {
 
-        RectF rect = new RectF(barcode.getBoundingBox());
-        rect.left = translateX(rect.left);
-        rect.top = translateY(rect.top);
-        rect.right = translateX(rect.right);
-        rect.bottom = translateX(rect.bottom);
-        canvas.drawRect(rect, mRectPaint);
+            RectF rect = new RectF(barcode.getBoundingBox());
+            rect.left = translateX(rect.left);
+            rect.top = translateY(rect.top);
+            rect.right = translateX(rect.right);
+            rect.bottom = translateX(rect.bottom);
+            canvas.drawRect(rect, mRectPaint);
 
-        canvas.drawText(barcode.rawValue, rect.left, rect.bottom, mTextPaint);
-        showSnackBar(barcode);
+            canvas.drawText(barcode.rawValue, rect.left, rect.bottom, mTextPaint);
+            showSnackBar(barcode);
+        }
+
     }
 
     private void showSnackBar(Barcode barcode) {
@@ -98,4 +113,14 @@ public class ScannerGraphic extends GraphicOverlay.Graphic {
         textView.setTextColor(mOverlay.getResources().getColor(R.color.colorAccent));
         snackbar.show();
     }
+
+    private void showErrorSnackBar() {
+        Snackbar snackbar = Snackbar.make(mOverlay, "Invalid BarCode", Snackbar.LENGTH_SHORT);
+        View v = snackbar.getView();
+        TextView textView = (TextView) v.findViewById(android.support.design.R.id.snackbar_text);
+        textView.setTextColor(mOverlay.getResources().getColor(R.color.error));
+        snackbar.show();
+    }
+
+
 }

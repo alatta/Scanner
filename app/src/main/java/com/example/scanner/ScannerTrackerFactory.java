@@ -13,14 +13,16 @@ import com.google.android.gms.vision.barcode.Barcode;
  */
 public class ScannerTrackerFactory implements MultiProcessor.Factory<Barcode> {
     private GraphicOverlay<ScannerGraphic> mGraphicOverlay;
+    private ScanActivity mScanActivity;
 
-    public ScannerTrackerFactory(GraphicOverlay<ScannerGraphic> barcodeGraphicOverlay) {
+    public ScannerTrackerFactory(GraphicOverlay<ScannerGraphic> barcodeGraphicOverlay, ScanActivity scanActivity) {
         mGraphicOverlay = barcodeGraphicOverlay;
+        mScanActivity = scanActivity;
     }
 
     @Override
     public Tracker<Barcode> create(Barcode barcode) {
-        ScannerGraphic graphic = new ScannerGraphic(mGraphicOverlay);
+        ScannerGraphic graphic = new ScannerGraphic(mGraphicOverlay, mScanActivity);
         return new ScannerGraphicTracker(mGraphicOverlay, graphic);
     }
 
